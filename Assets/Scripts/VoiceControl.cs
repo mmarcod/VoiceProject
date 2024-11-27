@@ -16,10 +16,14 @@ public class VoiceControl : MonoBehaviour
 
     //Var needed for spin manipulation
     private bool spinningRight;
+    private bool movingRight;
+
 
     //Var needed for sound playback.
     private AudioSource soundSource;
     public AudioClip[] sounds;
+
+    public GameObject cube;
 
     
     void Start()
@@ -43,9 +47,19 @@ public class VoiceControl : MonoBehaviour
         //Voice command to show how complex it can get.
         keyActs.Add("pizza is a wonderful food that makes me very happy", FactAcknowledgement);
 
+        //Voice command to Destroy cube
+        keyActs.Add("destroy cube", DestroyObject);
+        keyActs.Add("create cube", CreateCube);
+
+        //Voice commands for opening link
+        keyActs.Add("open link", OpenLink);
+
         recognizer = new KeywordRecognizer(keyActs.Keys.ToArray());
         recognizer.OnPhraseRecognized += OnKeywordsRecognized;
         recognizer.Start();
+
+        //Voice commands for moving cube
+        keyActs.Add("move", MoveRight);
     }
 
     void OnKeywordsRecognized (PhraseRecognizedEventArgs args)
@@ -86,6 +100,27 @@ public class VoiceControl : MonoBehaviour
         StartCoroutine(RotateObject(1f));
     }
 
+    void MoveRight()
+    {
+        movingRight = true;
+        StartCoroutine(MoveObject(5f, 2f));
+    }
+
+    void DestroyObject()
+    {
+        cube.SetActive(false);
+    }
+
+    void CreateCube()
+    {
+        cubeRend.material.SetColor("_Color", Color.white);
+
+        cube.SetActive(true);
+    }
+    void OpenLink()
+    {
+        Application.OpenURL("www.google.com");
+    }
     private IEnumerator RotateObject(float duration)
     {
         float StartRot = transform.eulerAngles.x;
@@ -104,6 +139,31 @@ public class VoiceControl : MonoBehaviour
             t += Time.deltaTime;
             yRot = Mathf.Lerp(StartRot, endRot, t / duration) % 360.0f;
             transform.eulerAngles = new Vector3(transform.eulerAngles.x, yRot, transform.eulerAngles.z);
+            yield return null;
+        }
+    }
+
+    private IEnumerator MoveObject(float height, float duration)
+    {
+        Vector3 originalPosition = gameObject.transform.position;
+        Vector3 targetPosition = originalPosition + Vector3.up * height;
+
+        float elapsedTime = 0;
+
+        while (elapsedTime < duration / 2f)
+        {
+            gameObject.transform.position = Vector3.Lerp(originalPosition, targetPosition, elapsedTime / (duration / 2f));
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+
+        gameObject.transform.position = targetPosition;
+        elapsedTime = 0;
+
+        while (elapsedTime < duration / 2f)
+        {
+            gameObject.transform.position = Vector3.Lerp(targetPosition, originalPosition, elapsedTime / (duration / 2f));
+            elapsedTime += Time.deltaTime;
             yield return null;
         }
     }
